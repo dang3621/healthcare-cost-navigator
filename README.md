@@ -1,0 +1,373 @@
+# Healthcare Cost Navigator MVP
+
+A web service that enables patients to search for hospitals offering MS-DRG procedures, view estimated prices & quality ratings, and interact with an AI assistant for natural language queries.
+
+## Features
+
+- **Hospital Search**: Search hospitals by MS-DRG procedures, ZIP code, and radius
+- **Cost Comparison**: View and compare hospital pricing for procedures
+- **Quality Ratings**: Mock star ratings (1-10 scale) for hospital quality assessment
+- **AI Assistant**: Natural language interface for healthcare queries
+- **RESTful API**: Clean JSON API with comprehensive documentation
+
+## Tech Stack
+
+- **Backend**: Python 3.11, FastAPI, async SQLAlchemy
+- **Database**: PostgreSQL with async support
+- **AI**: OpenAI GPT-3.5-turbo for natural language processing
+- **Infrastructure**: Docker Compose, Alembic for migrations
+- **Package Management**: Poetry
+
+## Quick Start
+
+### Prerequisites
+
+- Docker and Docker Compose
+- OpenAI API key
+- Git
+
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/beaubeas/healthcare-cost-navigator.git
+cd healthcare-cost-navigator
+```
+
+### 2. Environment Setup
+
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Edit .env file and add your OpenAI API key
+# OPENAI_API_KEY=your_actual_api_key_here
+```
+
+### 3. Start Services
+
+```bash
+# Start PostgreSQL and API services
+docker-compose up -d
+
+# Check services are running
+docker-compose ps
+```
+
+### 4. Load Sample Data
+
+```bash
+# Run ETL script to load hospital data and generate ratings
+docker-compose exec api python etl.py
+```
+
+### 5. Test the API
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Search providers
+curl "http://localhost:8000/providers?drg=470&zip_code=10001&radius_km=40"
+
+# Ask AI assistant
+curl -X POST http://localhost:8000/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Who is cheapest for knee replacement near 10001?"}'
+```
+
+## API Endpoints
+
+### GET /providers
+
+Search hospitals by DRG, ZIP code, and radius.
+
+**Parameters:**
+- `drg` (optional): DRG code or procedure name
+- `zip_code` (optional): ZIP code for location search
+- `radius_km` (optional): Search radius in kilometers (default: 50)
+- `limit` (optional): Max results (default: 20)
+- `offset` (optional): Pagination offset (default: 0)
+
+**Example:**
+```bash
+curl "http://localhost:8000/providers?drg=470&zip_code=10001&radius_km=25&limit=10"
+```
+
+### POST /ask
+
+Natural language interface for healthcare queries.
+
+**Body:**
+```json
+{
+  "question": "Who is cheapest for DRG 470 within 25 miles of 10001?"
+}
+```
+
+**Example:**
+```bash
+curl -X POST http://localhost:8000/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Which hospitals have the best ratings for heart surgery near 10032?"}'
+```
+
+### GET /ask/examples
+
+Get example questions the AI can answer.
+
+```bash
+curl http://localhost:8000/ask/examples
+```
+
+## Sample cURL Commands
+
+### 1. Search by DRG and Location
+```bash
+curl "http://localhost:8000/providers?drg=470&zip_code=10001&radius_km=40"
+```
+
+### 2. Search by Procedure Name
+```bash
+curl "http://localhost:8000/providers?drg=knee%20replacement&zip_code=10032&radius_km=25"
+```
+
+### 3. Get Specific Provider
+```bash
+curl "http://localhost:8000/providers/330123"
+```
+
+### 4. AI Cost Query
+```bash
+curl -X POST http://localhost:8000/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What is the cheapest hospital for major joint replacement near 10001?"}'
+```
+
+### 5. AI Quality Query
+```bash
+curl -X POST http://localhost:8000/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Which hospitals have the best ratings for cardiac procedures near 10016?"}'
+```
+
+### 6. AI General Search
+```bash
+curl -X POST http://localhost:8000/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Show me hospitals that do pneumonia treatment in Brooklyn"}'
+```
+
+### 7. Out-of-Scope Query (Will be declined)
+```bash
+curl -X POST http://localhost:8000/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What is the weather today?"}'
+```
+
+## AI Assistant Example Prompts
+
+The AI assistant can handle various types of healthcare-related queries:
+
+### Cost-Related Queries
+1. "Who is cheapest for DRG 470 within 25 miles of 10001?"
+2. "What's the most affordable hospital for knee replacement near 10032?"
+3. "Show me low-cost options for heart surgery within 40 miles of 11201"
+4. "Find the cheapest pneumonia treatment near 10075"
+5. "What are the most affordable hospitals for joint replacement in New York?"
+
+### Quality-Related Queries
+1. "Which hospitals have the best ratings for heart surgery near 10032?"
+2. "Show me top-rated hospitals for joint replacement in New York"
+3. "What are the highest quality hospitals for cardiac procedures near 10016?"
+4. "Find hospitals with good ratings for pneumonia treatment in Brooklyn"
+5. "Which hospital has the best quality ratings for DRG 194?"
+
+### General Search Queries
+1. "Find hospitals that do pneumonia treatment near 10075"
+2. "Show me all hospitals offering DRG 194 within 30 miles of 11215"
+3. "What hospitals in Brooklyn do major joint replacement?"
+
+## Database Schema
+
+### Providers Table
+- `provider_id`: Unique CMS provider identifier
+- `provider_name`: Hospital name
+- `provider_city/state/zip_code`: Location information
+- `ms_drg_definition`: Medical procedure definition
+- `total_discharges`: Volume indicator
+- `average_covered_charges`: Average hospital bill
+- `average_total_payments`: Total amount paid
+- `average_medicare_payments`: Medicare portion
+
+### Ratings Table
+- `provider_id`: Foreign key to providers
+- `rating`: Star rating (1-10 scale)
+- `rating_type`: Type of rating (overall, quality, safety, etc.)
+
+## Development Setup
+
+### Local Development (without Docker)
+
+1. **Install Dependencies**
+```bash
+poetry install
+```
+
+2. **Start PostgreSQL**
+```bash
+# Using Docker for just the database
+docker run -d \
+  --name postgres \
+  -e POSTGRES_DB=healthcare_navigator \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -p 5432:5432 \
+  postgres:15
+```
+
+3. **Run Migrations**
+```bash
+alembic upgrade head
+```
+
+4. **Load Data**
+```bash
+python etl.py
+```
+
+5. **Start API**
+```bash
+uvicorn app.main:app --reload
+```
+
+### Database Migrations
+
+```bash
+# Create new migration
+alembic revision --autogenerate -m "Description"
+
+# Apply migrations
+alembic upgrade head
+
+# Rollback migration
+alembic downgrade -1
+```
+
+## Architecture Decisions
+
+### 1. **Async Architecture**
+- Used async SQLAlchemy and FastAPI for better performance
+- Enables handling multiple concurrent requests efficiently
+- Non-blocking database operations
+
+### 2. **Service Layer Pattern**
+- Separated business logic into service classes
+- `ProviderService` handles hospital search and filtering
+- `AIService` manages natural language processing
+- Improves testability and maintainability
+
+### 3. **AI Integration Strategy**
+- OpenAI for natural language understanding and response generation
+- Fallback regex parsing when AI fails
+- Structured parameter extraction from natural language
+- Grounded responses based on actual database results
+
+### 4. **Database Design**
+- Composite indexes for common query patterns (DRG + ZIP)
+- Separate ratings table for flexibility
+- Foreign key relationships for data integrity
+
+### 5. **Geographic Search**
+- Geopy for ZIP code to coordinate conversion
+- Geodesic distance calculation for accurate radius filtering
+- Graceful fallback when geocoding fails
+
+## Trade-offs
+
+### 1. **Geocoding Performance**
+- **Trade-off**: Real-time geocoding vs. pre-computed coordinates
+- **Decision**: Real-time geocoding for simplicity
+- **Impact**: Slower response times but more flexible
+- **Alternative**: Pre-compute and cache coordinates for better performance
+
+### 2. **AI Response Time**
+- **Trade-off**: AI quality vs. response speed
+- **Decision**: Use GPT-3.5-turbo with fallback logic
+- **Impact**: ~1-2 second response times
+- **Alternative**: Use faster models or pre-computed responses
+
+### 3. **Data Freshness**
+- **Trade-off**: Real-time data vs. batch processing
+- **Decision**: Batch ETL process for sample data
+- **Impact**: Data may be stale but system is simpler
+- **Alternative**: Real-time data ingestion pipeline
+
+### 4. **Search Complexity**
+- **Trade-off**: Simple ILIKE search vs. full-text search
+- **Decision**: ILIKE with fuzzy matching fallback
+- **Impact**: Good enough for MVP, may need enhancement
+- **Alternative**: PostgreSQL full-text search or Elasticsearch
+
+## Testing
+
+### Manual Testing
+```bash
+# Start services
+docker-compose up -d
+
+# Test health endpoint
+curl http://localhost:8000/health
+
+# Test provider search
+curl "http://localhost:8000/providers?drg=470&zip_code=10001"
+
+# Test AI assistant
+curl -X POST http://localhost:8000/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Who is cheapest for knee replacement near 10001?"}'
+```
+
+### API Documentation
+Visit `http://localhost:8000/docs` for interactive API documentation.
+
+## Production Considerations
+
+### Security
+- Add API authentication/authorization
+- Rate limiting for AI endpoints
+- Input validation and sanitization
+- HTTPS termination
+
+### Performance
+- Database connection pooling
+- Caching for frequent queries
+- CDN for static assets
+- Load balancing
+
+### Monitoring
+- Application metrics
+- Database performance monitoring
+- AI usage tracking
+- Error logging and alerting
+
+### Scalability
+- Horizontal scaling with load balancers
+- Database read replicas
+- Async task queues for heavy operations
+- Microservices architecture
+
+## License
+
+MIT License - see LICENSE file for details.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
+
+## Support
+
+For questions or issues, please open a GitHub issue or contact the development team.
