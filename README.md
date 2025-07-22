@@ -123,17 +123,17 @@ curl http://localhost:8000/ask/examples
 
 ### 1. Search by DRG and Location
 ```bash
-curl "http://localhost:8000/providers?drg=470&zip_code=10001&radius_km=40"
+curl "http://localhost:8000/providers?drg=470&zip_code=67401&radius_km=40"
 ```
 
 ### 2. Search by Procedure Name
 ```bash
-curl "http://localhost:8000/providers?drg=knee%20replacement&zip_code=10032&radius_km=25"
+curl "http://localhost:8000/providers?drg=knee%20replacement&zip_code=25301&radius_km=25"
 ```
 
 ### 3. Get Specific Provider
 ```bash
-curl "http://localhost:8000/providers/330123"
+curl "http://localhost:8000/providers/330125"
 ```
 
 ### 4. AI Cost Query
