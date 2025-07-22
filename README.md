@@ -12,7 +12,7 @@ A web service that enables patients to search for hospitals offering MS-DRG proc
 
 ## Tech Stack
 
-- **Backend**: Python 3.11, FastAPI, async SQLAlchemy
+- **Backend**: Python 3.11+, FastAPI, async SQLAlchemy
 - **Database**: PostgreSQL with async support
 - **AI**: OpenAI GPT-3.5-turbo for natural language processing
 - **Infrastructure**: Docker Compose, Alembic for migrations
@@ -332,11 +332,6 @@ tests/
 
 #### Running Tests
 
-**Prerequisites:**
-```bash
-poetry install --with dev
-```
-
 **Basic Test Execution:**
 ```bash
 # Run all tests
@@ -421,25 +416,6 @@ Tests use an in-memory SQLite database that is:
 3. **Use appropriate fixtures**: Leverage existing fixtures for common setup
 4. **Mock external dependencies**: Don't make real API calls in tests
 5. **Test edge cases**: Include tests for error conditions and boundary values
-
-**Example Test Structure:**
-```python
-@pytest.mark.asyncio
-async def test_search_providers_with_drg(self, client: AsyncClient, sample_providers):
-    """Test searching providers with DRG parameter"""
-    # Arrange
-    drg_code = "470"
-    
-    # Act
-    response = await client.get(f"/providers/?drg={drg_code}")
-    
-    # Assert
-    assert response.status_code == 200
-    data = response.json()
-    assert "providers" in data
-    for provider in data["providers"]:
-        assert drg_code in provider["procedure"]
-```
 
 #### Performance Testing
 
@@ -528,7 +504,3 @@ MIT License - see LICENSE file for details.
 3. Make your changes
 4. Add tests
 5. Submit a pull request
-
-## Support
-
-For questions or issues, please open a GitHub issue or contact the development team.
