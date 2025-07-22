@@ -67,12 +67,12 @@ docker-compose exec api python etl.py
 curl http://localhost:8000/health
 
 # Search providers
-curl "http://localhost:8000/providers?drg=470&zip_code=10001&radius_km=40"
+curl "http://localhost:8000/providers?drg=470&zip_code=67401&radius_km=40"
 
 # Ask AI assistant
 curl -X POST http://localhost:8000/ask \
   -H "Content-Type: application/json" \
-  -d '{"question": "Who is cheapest for knee replacement near 10001?"}'
+  -d '{"question": "Who is cheapest for knee replacement near 67401?"}'
 ```
 
 ## API Endpoints
@@ -90,7 +90,7 @@ Search hospitals by DRG, ZIP code, and radius.
 
 **Example:**
 ```bash
-curl "http://localhost:8000/providers?drg=470&zip_code=10001&radius_km=25&limit=10"
+curl "http://localhost:8000/providers?drg=470&zip_code=67401&radius_km=25&limit=10"
 ```
 
 ### POST /ask
@@ -100,7 +100,7 @@ Natural language interface for healthcare queries.
 **Body:**
 ```json
 {
-  "question": "Who is cheapest for DRG 470 within 25 miles of 10001?"
+  "question": "Who is cheapest for DRG 470 within 25 miles of 67401?"
 }
 ```
 
@@ -140,7 +140,7 @@ curl "http://localhost:8000/providers/330125"
 ```bash
 curl -X POST http://localhost:8000/ask \
   -H "Content-Type: application/json" \
-  -d '{"question": "What is the cheapest hospital for major joint replacement near 10001?"}'
+  -d '{"question": "What is the cheapest hospital for major joint replacement near 67401?"}'
 ```
 
 ### 5. AI Quality Query
@@ -309,6 +309,167 @@ alembic downgrade -1
 - **Alternative**: PostgreSQL full-text search or Elasticsearch
 
 ## Testing
+
+![Test Results Overview](result-overview.png)
+
+### Automated Test Suite
+
+The project includes a comprehensive test suite with 45+ tests covering all major components:
+
+#### Test Structure
+
+```
+tests/
+├── __init__.py                 # Test package initialization
+├── conftest.py                # Pytest fixtures and configuration
+├── test_main.py               # Tests for main FastAPI application
+├── test_providers_api.py      # Tests for providers API endpoints
+├── test_assistant_api.py      # Tests for AI assistant API endpoints
+├── test_provider_service.py   # Tests for provider service logic
+├── test_models.py             # Tests for database models
+└── README.md                  # Test documentation
+```
+
+#### Running Tests
+
+**Prerequisites:**
+```bash
+poetry install --with dev
+```
+
+**Basic Test Execution:**
+```bash
+# Run all tests
+pytest
+
+# Run tests with verbose output
+pytest -v
+
+# Run specific test file
+pytest tests/test_main.py
+
+# Run specific test function
+pytest tests/test_main.py::TestMainApp::test_root_endpoint
+
+# Run tests matching a pattern
+pytest -k "test_provider"
+```
+
+**Using the Test Runner Script:**
+```bash
+# Run all tests
+python run_tests.py
+
+# Run with coverage report
+python run_tests.py --coverage
+
+# Run verbose tests
+python run_tests.py --verbose
+
+# Run specific test file
+python run_tests.py --file test_main.py
+
+# Run specific test function
+python run_tests.py --test test_root_endpoint
+
+# Run only fast tests (exclude slow tests)
+python run_tests.py --fast
+```
+
+**Coverage Reports:**
+```bash
+# Generate HTML and terminal coverage reports
+pytest --cov=app --cov-report=html --cov-report=term
+
+# Or use the test runner
+python run_tests.py --coverage
+```
+
+The HTML coverage report will be generated in `htmlcov/index.html`.
+
+#### Test Categories
+
+**Unit Tests:**
+- **Models**: Test database model functionality
+- **Services**: Test business logic in service classes
+- **Utilities**: Test helper functions and utilities
+
+**Integration Tests:**
+- **API Endpoints**: Test FastAPI endpoints with database integration
+- **Database Operations**: Test complex database queries and transactions
+
+#### Test Features
+
+- **Async Testing**: Full support for async/await patterns using pytest-asyncio
+- **Database Testing**: In-memory SQLite database with proper fixtures and cleanup
+- **API Testing**: HTTP client testing with dependency injection override
+- **Mocking**: Proper mocking for external services (AI, geocoding)
+- **Fixtures**: Reusable test data (sample providers, ratings)
+- **Coverage Support**: Integration with pytest-cov for coverage reporting
+
+#### Test Database
+
+Tests use an in-memory SQLite database that is:
+- Created fresh for each test session
+- Automatically cleaned up after each test
+- Isolated between tests to prevent interference
+
+#### Writing New Tests
+
+1. **Use descriptive test names**: `test_search_providers_with_valid_drg`
+2. **Follow AAA pattern**: Arrange, Act, Assert
+3. **Use appropriate fixtures**: Leverage existing fixtures for common setup
+4. **Mock external dependencies**: Don't make real API calls in tests
+5. **Test edge cases**: Include tests for error conditions and boundary values
+
+**Example Test Structure:**
+```python
+@pytest.mark.asyncio
+async def test_search_providers_with_drg(self, client: AsyncClient, sample_providers):
+    """Test searching providers with DRG parameter"""
+    # Arrange
+    drg_code = "470"
+    
+    # Act
+    response = await client.get(f"/providers/?drg={drg_code}")
+    
+    # Assert
+    assert response.status_code == 200
+    data = response.json()
+    assert "providers" in data
+    for provider in data["providers"]:
+        assert drg_code in provider["procedure"]
+```
+
+#### Performance Testing
+
+```bash
+# Time test execution
+pytest --durations=10
+
+# Profile slow tests
+pytest --durations=0
+```
+
+#### Troubleshooting
+
+**Common Issues:**
+1. **Import Errors**: Make sure you're running tests from the project root
+2. **Database Errors**: Check that all required models are imported in conftest.py
+3. **Async Issues**: Ensure async tests are marked with `@pytest.mark.asyncio`
+4. **Fixture Errors**: Verify fixture dependencies are correctly defined
+
+**Debug Mode:**
+```bash
+# Show full traceback
+pytest --tb=long
+
+# Stop on first failure
+pytest -x
+
+# Show local variables in traceback
+pytest --tb=long --showlocals
+```
 
 ### Manual Testing
 ```bash
