@@ -29,7 +29,7 @@ A web service that enables patients to search for hospitals offering MS-DRG proc
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/beaubeas/healthcare-cost-navigator.git
+git clone https://github.com/dang3621/healthcare-cost-navigator.git
 cd healthcare-cost-navigator
 ```
 
